@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import NeuralNetworkCanvas from './NeuralNetworkCanvas'
+import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 
 function sigmoid(x) {

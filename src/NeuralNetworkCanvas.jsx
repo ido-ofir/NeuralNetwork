@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 
-function getColor(value) {
+const getColor = (value) => {
     // Ensure the value is within the expected range
     value = Math.max(-1, Math.min(1, value));
   
@@ -10,7 +10,7 @@ function getColor(value) {
     // Return an HSL color string
     return `hsl(${hue}, 100%, 50%)`;
   }
-function NeuralNetworkCanvas({ network }) {
+export const NeuralNetworkCanvas = ({ network }) => {
     const canvasRef = useRef(null);
 
     useEffect(() => {
@@ -81,4 +81,3 @@ function NeuralNetworkCanvas({ network }) {
     );
 }
 
-export default NeuralNetworkCanvas;

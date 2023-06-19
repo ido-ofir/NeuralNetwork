@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
-import NeuralNetworkCanvas from './NeuralNetworkCanvas'
-
+import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
+import { NeuralNetwork } from './NeuralNetwork.mjs';
 
 function sigmoid(x) {
   return 1 / (1 + Math.exp(-x));
