@@ -15,7 +15,7 @@ export class Matrix {
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.cols; j++) {
                 let val = this.data[i][j];
-                this.data[i][j] = func(val, i * this.cols + j);
+                this.data[i][j] = func(val, i, j);
             }
         }
         return this;

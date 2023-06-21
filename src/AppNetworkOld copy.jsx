@@ -34,22 +34,15 @@ class Neuron {
 
 class MLP {
   constructor(layers) {
-    let numInputs = layers.shift()
-    this.layers = layers.map(l => {
-      const layer = Array.from({ length: l }, () => new Neuron(numInputs))
-      numInputs = l
-      return layer
-    })
+    this.layers = layers
     this.hidden = [new Neuron(1)];
     this.output = new Neuron(1);
   }
 
   feedforward(inputs) {
-    let outputs = inputs
-    this.layers.map(layer => {
-      outputs = layer.map(n => n.feedforward(outputs))
-    })
-    return outputs;
+    const hiddenOut = this.hidden.map(n => n.feedforward(inputs));
+    const output = this.output.feedforward(hiddenOut)
+    return output;
   }
 
   neuronFeedforward(neuron, inputs) {
@@ -65,34 +58,11 @@ class MLP {
   train(inputs, targets, epochs, lr) {
     for (let e = 0; e < epochs; e++) {
       for (let i = 0; i < inputs.length; i++) {
-          const outputs = this.feedforward(inputs[i]);
-          const error = output.map((t, k) => targets[i][k] - t);
-
-          for(let l = this.layers.length - 1; l >= 0; l--) {
-            const layer = this.layers[l];
-            let gradients = Matrix.map(outputs[i + 1], this.dsigmoid);
-            gradients.multiply(error);
-            gradients.multiply(this.learningRate);
-
-            // Calculate deltas
-            let previousOutputsT = Matrix.transpose(i > 0 ? layerOutputs[i] : layerOutputs[0]);
-            let deltas = Matrix.multiply(gradients, previousOutputsT);
-
-            // Adjust weights and biases
-            this.layers[i].weights.add(deltas);
-            this.layers[i].biases.add(gradients);
-
-            // Calculate next error
-            let weightsT = Matrix.transpose(this.layers[i].weights);
-            error = Matrix.multiply(weightsT, error);
-        }
-
-          outputs.map((output, k) => {
-            const error = targets[i][k] - output;
-            const outputDirevative = sigmoidDerivative(output);
-            const outputWeights = this.output.weights;
-          })
-        
+          const hiddenOut = this.hidden.map((n) => n.feedforward(inputs[i]));
+          const output = this.output.feedforward(hiddenOut);
+          const error = targets[i] - output;
+        const outputDirevative = sigmoidDerivative(output);
+        const outputWeights = this.output.weights;
 
         for (let j = 0; j < this.hidden.length; j++) {
           const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
@@ -122,25 +92,21 @@ let inputs = [
   // [1, 0],
   // [1, 1],
 ]; // inputs for XOR gate
-let targets = [[1], [0]]; // targets for XOR gate
+let targets = [1, 0]; // targets for XOR gate
 const random = () => Math.random() * 2 - 1
 const neuron = (numWeights) => [Array.from({ length: numWeights }, random), random()]
 const layer = (length, prevLayerLength) => Array.from({ length }, () => neuron(prevLayerLength))
 
 let mlp = new MLP([
-  1,  
-  1,  
-  1,  
+  layer(2, 0),
+  layer(2, 2),
+  layer(1, 2),  
 ]);
-
-let outputValue = mlp.feedforward(inputs[0])[0].toFixed(2)
-
-console.log(outputValue)
 
 const App = () => {
   const index = useRef(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [output, setOutput] = useState(outputValue)
+  const [output, setOutput] = useState(mlp.feedforward(inputs[index.current]).toFixed(2))
   const [stepsCount, setStepsCount] = useState(0)
   const interval = useRef(null)
   const input = inputs[index.current]
@@ -153,7 +119,7 @@ const App = () => {
     const input = inputs[i]
     const target = targets[i]
     mlp.train([input], [target], 1, 0.2);
-    setOutput(mlp.feedforward(inputs[i])[0].toFixed(2))
+    setOutput(mlp.feedforward(inputs[i]).toFixed(2))
     index.current = i
     setStepsCount(stepsCount + 1)
   }
@@ -168,7 +134,7 @@ const App = () => {
 
   const train = (epochs) => {
     mlp.train(inputs, targets, epochs, 0.2);
-    setOutput(mlp.feedforward(inputs[0])[0].toFixed(2))
+    setOutput(mlp.feedforward(inputs[0]).toFixed(2))
     setStepsCount(stepsCount + epochs * inputs.length)
     index.current = 0;
   }
@@ -185,11 +151,8 @@ const App = () => {
             }
           </div>
           <div>
-          {
-              mlp.layers.map((layer, i) => (
-                <div key={i} style={{ }}>
-                  {
-              layer.map(t => (
+            {
+              mlp.hidden.map(t => (
                 <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                   { t.weights.map((w, i) => (
                     <div key={i}>{ w.toFixed(2) }</div>
@@ -198,17 +161,24 @@ const App = () => {
               ))
             }
             {
-              layer.map(t => (
+              mlp.hidden.map(t => (
                 <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                   <div>{ t.bias.toFixed(2) }</div>
                   <div>{ t.output.toFixed(2) }</div>
                 </div>
               ))
             }
+          </div>
+          <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                  { mlp.output.weights.map((w, i) => (
+                    <div key={i}>{ w.toFixed(2) }</div>
+                  ))}
                 </div>
-              ))
-            } 
-            
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                  <div>{ mlp.output.bias.toFixed(2) }</div>
+                  <div>{ mlp.output.output.toFixed(2) }</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
