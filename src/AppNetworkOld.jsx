@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react'
-import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
+import React, { useRef, useState } from 'react';
+import { NeuralNetworkCanvas } from './NeuralNetworkCanvas';
 
 
 function sigmoid(x) {
@@ -39,15 +39,21 @@ class MLP {
       const layer = Array.from({ length: l }, () => new Neuron(numInputs))
       numInputs = l
       return layer
-    })
-    this.hidden = [new Neuron(1)];
-    this.output = new Neuron(1);
+    });
   }
 
   feedforward(inputs) {
     let outputs = inputs
     this.layers.map(layer => {
       outputs = layer.map(n => n.feedforward(outputs))
+    })
+    return outputs;
+  }
+
+  getOutputs(inputs) {
+    const outputs = []
+    this.layers.map(layer => {
+      outputs.push(layer.map(n => n.feedforward(outputs[outputs.length - 1] || inputs)))
     })
     return outputs;
   }
@@ -65,52 +71,24 @@ class MLP {
   train(inputs, targets, epochs, lr) {
     for (let e = 0; e < epochs; e++) {
       for (let i = 0; i < inputs.length; i++) {
-          const outputs = this.feedforward(inputs[i]);
-          const error = output.map((t, k) => targets[i][k] - t);
+        let allOutputs = this.getOutputs(inputs[i]);
+        let errors = allOutputs[allOutputs.length - 1].map((t, k) => targets[i][k] - t);
 
-          for(let l = this.layers.length - 1; l >= 0; l--) {
-            const layer = this.layers[l];
-            let gradients = Matrix.map(outputs[i + 1], this.dsigmoid);
-            gradients.multiply(error);
-            gradients.multiply(this.learningRate);
-
-            // Calculate deltas
-            let previousOutputsT = Matrix.transpose(i > 0 ? layerOutputs[i] : layerOutputs[0]);
-            let deltas = Matrix.multiply(gradients, previousOutputsT);
-
-            // Adjust weights and biases
-            this.layers[i].weights.add(deltas);
-            this.layers[i].biases.add(gradients);
-
-            // Calculate next error
-            let weightsT = Matrix.transpose(this.layers[i].weights);
-            error = Matrix.multiply(weightsT, error);
-        }
-
-          outputs.map((output, k) => {
-            const error = targets[i][k] - output;
-            const outputDirevative = sigmoidDerivative(output);
-            const outputWeights = this.output.weights;
-          })
-        
-
-        for (let j = 0; j < this.hidden.length; j++) {
-          const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
-          const factor = error * hiddenDirevative * outputDirevative;
-          const hidden = this.hidden[j];
-          for (let k = 0; k < hidden.weights.length; k++) {
-            const inputVal = inputs[i][k];
-            hidden.weights[k] =
-              hidden.weights[k] + factor * outputWeights[j] * inputVal * lr;
+        for (let l = this.layers.length - 1; l >= 0; l--) {
+          const layer = this.layers[l];
+          const outputs = allOutputs[l];
+          const currentInputs = allOutputs[l - 1] || inputs
+          const outputDirevatives = outputs.map(sigmoidDerivative);
+          for (let g = 0; g < layer.length; g++) {
+            const neuron = layer[g];
+            neuron.weights = neuron.weights.map((w, wi) => {
+              const value = w + lr * errors[g] * outputDirevatives[g] * currentInputs[wi];
+              return value
+            });
+            neuron.bias = neuron.bias + lr * errors[g] * outputDirevatives[g];
           }
-          hidden.bias = hidden.bias + factor * outputWeights[j] * lr;
+          errors = errors.map(e => e * (1 - lr));
         }
-
-        for (let j = 0; j < outputWeights.length; j++) {
-          outputWeights[j] +=
-            error * sigmoidDerivative(output) * hiddenOut[j] * lr;
-        }
-        this.output.bias += error * sigmoidDerivative(output) * lr;
       }
     }
   }
@@ -123,14 +101,11 @@ let inputs = [
   // [1, 1],
 ]; // inputs for XOR gate
 let targets = [[1], [0]]; // targets for XOR gate
-const random = () => Math.random() * 2 - 1
-const neuron = (numWeights) => [Array.from({ length: numWeights }, random), random()]
-const layer = (length, prevLayerLength) => Array.from({ length }, () => neuron(prevLayerLength))
 
 let mlp = new MLP([
-  1,  
-  1,  
-  1,  
+  1,
+  1,
+  1,
 ]);
 
 let outputValue = mlp.feedforward(inputs[0])[0].toFixed(2)
@@ -147,7 +122,7 @@ const App = () => {
   const target = targets[index.current]
   const step = () => {
     let i = index.current + 1
-    if (i >= inputs.length){
+    if (i >= inputs.length) {
       i = 0
     }
     const input = inputs[i]
@@ -176,50 +151,62 @@ const App = () => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#888' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-        <div style={{ width: 200, height: 200, border: '1px solid black' }}>
+        <div style={{ width: 200, border: '1px solid black' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
             {
               input.map(t => (
-                <div key={t}>{ t }</div>
+                <div key={t} style={{ marginBottom: 10 }}>
+                  <div>Input</div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>{t}</div>
+                </div>
               ))
             }
           </div>
           <div>
-          {
-              mlp.layers.map((layer, i) => (
-                <div key={i} style={{ }}>
-                  {
-              layer.map(t => (
-                <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                  { t.weights.map((w, i) => (
-                    <div key={i}>{ w.toFixed(2) }</div>
-                  ))}
-                </div>
-              ))
-            }
             {
-              layer.map(t => (
-                <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                  <div>{ t.bias.toFixed(2) }</div>
-                  <div>{ t.output.toFixed(2) }</div>
+              mlp.layers.map((layer, i) => (
+                <div key={i} style={{}}>
+                  {
+                    layer.map(t => (
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', marginBottom: 10 }}>
+                        {t.weights.map((w, i) => (
+                          <div key={i}>
+                            <div>Weight</div>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>{w.toFixed(2)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  }
+                  {
+                    layer.map(t => (
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', flexDirection: 'column', justifyContent: 'space-around' }}>
+                        <div style={{ marginBottom: 10 }}>
+                          <div>Bias</div>
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>{t.bias.toFixed(2)}</div>
+                        </div>
+                        <div style={{ marginBottom: 10 }}>
+                          <div>Output</div>
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>{t.output.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    ))
+                  }
                 </div>
               ))
             }
-                </div>
-              ))
-            } 
-            
+
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
           <div style={{}}>
             <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
-              <div>{ input[0] }</div>
+              <div>{input[0]}</div>
             </div>
-            <NeuralNetworkCanvas network={[input.map(n => ({ bias: n, output: n })), mlp.hidden,[mlp.output]]}/>
+            <NeuralNetworkCanvas network={[input.map(n => ({ bias: n, output: n })), ...mlp.layers]} />
           </div>
           <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
-            <div>{ output }</div>
+            <div>{output}</div>
           </div>
           <div>
             <div>
@@ -227,7 +214,7 @@ const App = () => {
                 Step
               </button>
               <button onClick={isPlaying ? stop : play}>
-                { isPlaying ? 'Stop' : 'Play' }
+                {isPlaying ? 'Stop' : 'Play'}
               </button>
               <button onClick={() => train(10000)}>
                 10,000 epochs
