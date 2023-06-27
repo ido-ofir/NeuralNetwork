@@ -2,7 +2,7 @@ export class Matrix {
     constructor(rows, cols) {
         this.rows = rows;
         this.cols = cols;
-        this.data = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        this.data = Array(this.rows).fill(0).map(() => Array(this.cols).fill(0));
     }
 
     // Fill the matrix with random numbers

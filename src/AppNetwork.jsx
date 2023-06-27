@@ -1,199 +1,46 @@
-import React, { useState, useRef } from 'react'
-import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
+import React, { useRef, useState } from 'react';
+import { Matrix } from "./Matrix.mjs";
 import { NeuralNetwork } from './NeuralNetwork.mjs';
+import { NeuralNetworkCanvas } from './NeuralNetworkCanvas2';
 
-function sigmoid(x) {
-  return 1 / (1 + Math.exp(-x));
-}
-
-function sigmoidDerivative(x) {
-  const fx = sigmoid(x);
-  return fx * (1 - fx);
-}
-
-function getNeuronOutput(neuron, inputs) {
-  let total = 0;
-  const [weights, bias] = neuron
-  for (let i = 0; i < inputs.length; i++) {
-    total += weights[i] * inputs[i];
-  }
-  total += bias;
-  return sigmoid(total);
-}
-
-function getNetworkOutputs(network) {
-  let outputs = network[0]
-  for (let q = 1; q < network.length; q++) {
-    outputs = network[q].map(neuron => getNeuronOutput(neuron, outputs))
-  }
-  return outputs;
-}
-
-function getNetworkOutputsStack(network) {
-  let outputs = network[0]
-  const stack = []
-  for (let q = 1; q < network.length; q++) {
-    outputs = network[q].map(neuron => getNeuronOutput(neuron, outputs))
-    stack.push(outputs)
-  }
-  return stack;
-}
-
-function trainNetwork(network, inputs, targets, epochs, learningRate){
-  for (let e = 0; e < epochs; e++) {
-    for (let i = 0; i < inputs.length; i++) {
-      network[0][i] = inputs[i]
-      const outputs = getNetworkOutputs(network)
-      outputs.map((output, io) => {
-        const error = targets[i][io] - output;
-        const outputDirevative = sigmoidDerivative(output);
-        for (let q = 1; q < network.length; q++) {
-          const layer = network[q]
-          for (let j = 0; j < layer.length; j++) {
-            const layerDirevative = sigmoidDerivative(layer[j]);
-            const factor = error * layerDirevative * outputDirevative;
-            const hidden = this.hidden[j];
-            for (let k = 0; k < hidden.weights.length; k++) {
-              const inputVal = inputs[i][k];
-              hidden.weights[k] =
-                hidden.weights[k] + factor * outputWeights[j] * inputVal * learningRate;
-            }
-            hidden.bias = hidden.bias + factor * outputWeights[j] * learningRate;
-          }
-        }
-      })
-      for (let q = 1; q < this.layers.length; q++) {
-        const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
-        const factor = error * hiddenDirevative * outputDirevative;
-        const hidden = this.hidden[j];
-        for (let k = 0; k < hidden.weights.length; k++) {
-          const inputVal = inputs[i][k];
-          hidden.weights[k] =
-            hidden.weights[k] + factor * outputWeights[j] * inputVal * learningRate;
-        }
-        hidden.bias = hidden.bias + factor * outputWeights[j] * learningRate;
-      }
-      const hiddenOut = this.hidden.map((n) => n.feedforward(inputs[i]));
-      const output = this.output.feedforward(hiddenOut);
-      const outputDirevative = sigmoidDerivative(output);
-      const outputWeights = this.output.weights;
-
-      for (let j = 0; j < this.hidden.length; j++) {
-        const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
-        const factor = error * hiddenDirevative * outputDirevative;
-        const hidden = this.hidden[j];
-        for (let k = 0; k < hidden.weights.length; k++) {
-          const inputVal = inputs[i][k];
-          hidden.weights[k] =
-            hidden.weights[k] + factor * outputWeights[j] * inputVal * learningRate;
-        }
-        hidden.bias = hidden.bias + factor * outputWeights[j] * learningRate;
-      }
-
-      for (let j = 0; j < outputWeights.length; j++) {
-        outputWeights[j] +=
-          error * sigmoidDerivative(output) * hiddenOut[j] * learningRate;
-      }
-      this.output.bias += error * sigmoidDerivative(output) * learningRate;
-    }
-  }
-}
-
-class MLP {
-  constructor(layers) {
-    this.layers = layers
-  }
-
-  feedforward(inputs) {
-    let outputs = inputs
-    this.layers[0].map((layer, i) => {
-        layer[1] = outputs[i]
-    })
-    for (let q = 1; q < this.layers.length; q++) {
-      outputs = this.layers[q].map(neuron => getNeuronOutput(neuron, outputs))
-    }
-    return outputs;
-  }
-
-  train(inputs, targets, epochs, lr) {
-    for (let e = 0; e < epochs; e++) {
-      for (let i = 0; i < inputs.length; i++) {
-        this.layers[0][i][1] = inputs[i]
-        const outputs = this.feedforward(inputs)
-        const error = targets[i] - outputs[0];
-        for (let q = 1; q < this.layers.length; q++) {
-          const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
-          const factor = error * hiddenDirevative * outputDirevative;
-          const hidden = this.hidden[j];
-          for (let k = 0; k < hidden.weights.length; k++) {
-            const inputVal = inputs[i][k];
-            hidden.weights[k] =
-              hidden.weights[k] + factor * outputWeights[j] * inputVal * lr;
-          }
-          hidden.bias = hidden.bias + factor * outputWeights[j] * lr;
-        }
-        const hiddenOut = this.hidden.map((n) => n.feedforward(inputs[i]));
-        const output = this.output.feedforward(hiddenOut);
-        const outputDirevative = sigmoidDerivative(output);
-        const outputWeights = this.output.weights;
-
-        for (let j = 0; j < this.hidden.length; j++) {
-          const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
-          const factor = error * hiddenDirevative * outputDirevative;
-          const hidden = this.hidden[j];
-          for (let k = 0; k < hidden.weights.length; k++) {
-            const inputVal = inputs[i][k];
-            hidden.weights[k] =
-              hidden.weights[k] + factor * outputWeights[j] * inputVal * lr;
-          }
-          hidden.bias = hidden.bias + factor * outputWeights[j] * lr;
-        }
-
-        for (let j = 0; j < outputWeights.length; j++) {
-          outputWeights[j] +=
-            error * sigmoidDerivative(output) * hiddenOut[j] * lr;
-        }
-        this.output.bias += error * sigmoidDerivative(output) * lr;
-      }
-    }
-  }
-}
+const neuralNetwork = new NeuralNetwork([
+  1,
+  1
+], 1)
 
 let inputs = [
-  [0, 0],
-  [0, 1],
-  [1, 0],
-  [1, 1],
-]; // inputs for XOR gate
-let targets = [0, 1, 1, 0]; // targets for XOR gate
-const random = () => Math.random() * 2 - 1
-const neuron = (numWeights) => [Array.from({ length: numWeights }, random), random()]
-const layer = (length, prevLayerLength) => Array.from({ length }, () => neuron(prevLayerLength))
-const network = [
-  [0, 0],
-  layer(4, 2),
-  layer(1, 4),
-]
-let mlp = new MLP([
-  [0, 0],
-  layer(4, 2),
-  layer(1, 4),
-]);
+  [0],
+  [1],
+];
+let targets = [[1], [0]];
+
+const cn = {
+  biases: new Matrix(1, 1).map(t => 0),
+  outputs: new Matrix(1, 1).map(t => 0),
+}
+
+const outputs = inputs.map(i => neuralNetwork.feedforward(i)[0].toFixed(2))
 
 const App = () => {
-  const [result, setResults] = useState(inputs.map(i => mlp.feedforward(i)[0].toFixed(2)))
   const index = useRef(0)
+  const [output, setOutput] = useState(outputs[0])
+  const input = inputs[index.current]
+  const target = targets[index.current]
+  const [canvasNetwork, setCanvasNetwork] = useState([{ biases: { data: [0] }, outputs: { data: [0] } }, ...neuralNetwork.layers])
   const [isPlaying, setIsPlaying] = useState(false)
+  const [stepsCount, setStepsCount] = useState(0)
   const interval = useRef(null)
   const step = () => {
     let i = index.current + 1
-    if (i >= inputs.length){
+    if (i >= inputs.length) {
       i = 0
     }
     const input = inputs[i]
     const target = targets[i]
-    mlp.train([input], [target], 1, 0.2);
-    setResults(inputs.map(i => mlp.feedforward(i)[0].toFixed(2)))
+    neuralNetwork.train([input], [target], 1, 0.2);
+    const outputs = neuralNetwork.feedforward(input);
+    setOutput(outputs[0].toFixed(2))
+    setCanvasNetwork([{ biases: { data: [0] }, outputs: { data: outputs } }, ...neuralNetwork.layers])
     index.current = i
   }
   const play = () => {
@@ -204,29 +51,80 @@ const App = () => {
     setIsPlaying(false)
     clearInterval(interval.current)
   }
-  const input = inputs[index.current]
-  const target = targets[index.current]
+
+  const train = (epochs) => {
+    neuralNetwork.train(inputs, targets, epochs, 0.2);
+    const outputs = neuralNetwork.feedforward(inputs[0]);
+    setOutput(outputs[0].toFixed(2))
+    setStepsCount(stepsCount + epochs * inputs.length)
+    setCanvasNetwork([{ biases: { data: [0] }, outputs: { data: outputs } }, ...neuralNetwork.layers])
+    index.current = 0;
+  }
+
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#888' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', gap: 20 }}>
-        <NeuralNetworkCanvas network={[input.map(n => ({ bias: n })), mlp.hidden,[mlp.output]]}/>
-        </div>
-        <div>
-          {
-            result.map((r, i) => <div key={i}>{r}</div>)
-          }
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+        <div style={{ width: 200, height: 200, border: '1px solid black' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+            {
+              input.map(t => (
+                <div key={t}>{t}</div>
+              ))
+            }
+          </div>
           <div>
-            <button onClick={step}>
-              Step
-            </button>
-            <button onClick={play}>
-              Play
-            </button>
-            <button onClick={stop}>
-              Stop
-            </button>
+            {
+              neuralNetwork.layers.map((layer, i) => (
+                <div key={i} style={{}}>
+                  {
+                    layer.weights.data.map(t => (
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                        {t.map((w, i) => (
+                          <div key={i}>{w.toFixed(2)}</div>
+                        ))}
+                      </div>
+                    ))
+                  }
+                  {
+                    layer.outputs.data.map((t, i) => (
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                        <div>{layer.biases.data[i][0].toFixed(2)}</div>
+                        <div>{t[0].toFixed(2)}</div>
+                      </div>
+                    ))
+                  }
+                </div>
+              ))
+            }
+
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
+          <div style={{}}>
+            <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
+              <div>{input[0]}</div>
+            </div>
+            <NeuralNetworkCanvas network={canvasNetwork} />
+          </div>
+          <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
+            <div>{output}</div>
+          </div>
+          <div>
+            <div>
+              <button onClick={step}>
+                Step
+              </button>
+              <button onClick={isPlaying ? stop : play}>
+                {isPlaying ? 'Stop' : 'Play'}
+              </button>
+              <button onClick={() => train(10000)}>
+                10,000 epochs
+              </button>
+              <button onClick={() => train(100000)}>
+                100,000 epochs
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -54,6 +54,7 @@ class MLP {
     total += bias;
     return sigmoid(total);
   }
+  
 
   train(inputs, targets, epochs, lr) {
     for (let e = 0; e < epochs; e++) {
@@ -84,7 +85,39 @@ class MLP {
       }
     }
   }
+
+  train2(inputs, targets, epochs, lr) {
+    for (let e = 0; e < epochs; e++) {
+      for (let i = 0; i < inputs.length; i++) {
+        const hiddenOut = this.hidden.map((n) => n.feedforward(inputs[i]));
+        const output = this.output.feedforward(hiddenOut);
+        const error = targets[i] - output;
+        const outputDirevative = sigmoidDerivative(output);
+        const outputWeights = this.output.weights;
+  
+        for (let j = 0; j < this.hidden.length; j++) {
+          const hiddenDirevative = sigmoidDerivative(hiddenOut[j]);
+          const factor = error * hiddenDirevative * outputDirevative;
+          const hidden = this.hidden[j];
+          for (let k = 0; k < hidden.weights.length; k++) {
+            const inputVal = inputs[i][k];
+            hidden.weights[k] =
+              hidden.weights[k] + factor * outputWeights[j] * inputVal * lr;
+          }
+          hidden.bias = hidden.bias + factor * outputWeights[j] * lr;
+        }
+  
+        for (let j = 0; j < outputWeights.length; j++) {
+          outputWeights[j] +=
+            error * outputDirevative * hiddenOut[j] * lr;
+        }
+        this.output.bias += error * outputDirevative * lr;
+      }
+    }
+  }
 }
+
+
 
 let inputs = [
   [0],
