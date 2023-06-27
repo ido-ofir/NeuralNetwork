@@ -1,10 +1,11 @@
 import { Matrix } from './Matrix.mjs';
 
 export class NeuralNetwork {
-    constructor(inputNodes, hiddenNodes, outputNodes) {
+    constructor(inputNodes, hiddenNodes, outputNodes, learningRate = 0.2) {
         this.inputNodes = inputNodes;
         this.hiddenNodes = hiddenNodes;
         this.outputNodes = outputNodes;
+        this.learningRate = learningRate;
 
         // Initialize weights and biases
         this.weights_ih = new Matrix(this.hiddenNodes, this.inputNodes).randomize();
@@ -23,16 +24,43 @@ export class NeuralNetwork {
         return y * (1 - y);
     }
 
-    train(inputArray, targetArray) {
-        // Feed forward
-        let inputs = Matrix.fromArray(inputArray);
-        let hidden = Matrix.multiply(this.weights_ih, inputs);
+    predict(inputArray) {
+        const inputs = Matrix.fromArray(inputArray);
+        const hidden = Matrix.multiply(this.weights_ih, inputs);
         hidden.add(this.bias_h);
         hidden.map(this.sigmoid);
 
-        let outputs = Matrix.multiply(this.weights_ho, hidden);
+        const outputs = Matrix.multiply(this.weights_ho, hidden);
         outputs.add(this.bias_o);
         outputs.map(this.sigmoid);
+
+        return {
+            inputs,
+            hidden,
+            outputs
+        }
+    }
+
+    assess(data) {
+        const result = data.map(({inputs, targets}) => {
+            const { outputs } = this.predict(inputs)
+            return {
+                inputs,
+                outputs: outputs.data,
+                accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - outputs.data[index].at(-1)), 0) / targets.length
+            }
+        })
+
+        return result
+    }
+
+    train(inputArray, targetArray) {
+        // Feed forward
+        const {
+            inputs,
+            hidden,
+            outputs
+        } = this.predict(inputArray)
 
         // Convert array to matrix object
         let targets = Matrix.fromArray(targetArray);
@@ -43,9 +71,9 @@ export class NeuralNetwork {
 
         // let gradient = outputs * (1 - outputs);
         // Calculate gradient
-        let gradients = Matrix.map(outputs, this.dsigmoid);
+        let gradients = outputs.map(this.dsigmoid);
         gradients.multiply(outputErrors);
-        gradients.multiply(learning_rate);
+        gradients.multiply(this.learningRate);
 
         // Calculate deltas
         let hiddenT = Matrix.transpose(hidden);
@@ -61,9 +89,9 @@ export class NeuralNetwork {
         let hiddenErrors = Matrix.multiply(weights_ho_t, outputErrors);
 
         // Calculate hidden gradient
-        let hiddenGradient = Matrix.map(hidden, this.dsigmoid);
+        let hiddenGradient = hidden.map(this.dsigmoid);
         hiddenGradient.multiply(hiddenErrors);
-        hiddenGradient.multiply(learning_rate);
+        hiddenGradient.multiply(this.learningRate);
 
         // Calcuate input->hidden deltas
         let inputsT = Matrix.transpose(inputs);
