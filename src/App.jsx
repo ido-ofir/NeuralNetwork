@@ -152,12 +152,37 @@ const data = [
         targets: [0, 1],
     }
 ]
+
+const getCanvas = (network, assessment) => {
+    const inputs = assessment.inputs.map(t => ({ bias: t, output: t }))
+    const hidden = []
+    const output = []
+    network.weights_ih.data.map((weights, i) => {
+        hidden.push({
+            weights,
+            bias: network.bias_h.data[i][0],
+            output: assessment.hidden.data[i][0],
+        })
+    })
+    network.weights_ho.data.map((weights, i) => {
+        output.push({
+            weights,
+            bias: network.bias_o.data[i][0],
+            output: assessment.outputs[i],
+        })
+    })
+    const layers = [inputs, hidden, output]
+    return layers;
+}
+
+
 const useML = ({inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, learningRate = 100} = {}) => {
     const intervalRef = useRef(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [stepsCount, step] = useReducer(stepsCount => stepsCount + 1, 0)
     const [output, setOutput] = useState([])
     const [neuralNetwork] = useState(() => new NeuralNetwork(inputs, hiddenLayer, outputs))
+    const [canvas, setCanvas] = useState([])
 
     useMemo(() => isPlaying ? intervalRef.current = setInterval(step, stepInterval) : clearInterval(intervalRef.current), [isPlaying])
 
@@ -172,6 +197,7 @@ const useML = ({inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, le
         data.map(({inputs, targets}) => neuralNetwork.train(inputs, targets))
         const output = neuralNetwork.assess(data)
         setOutput(output)
+        setCanvas(output.map(assessment => getCanvas(neuralNetwork, assessment)))
     }, [stepsCount])
 
     return {
@@ -181,6 +207,7 @@ const useML = ({inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, le
         isPlaying,
         stepsCount,
         output,
+        canvas,
         train,
     }
 }
@@ -194,6 +221,7 @@ const App = () => {
         stepsCount,
         output,
         train,
+        canvas,
      } = useML({inputs, hiddenLayer, outputs})
 
     return (
@@ -252,11 +280,12 @@ const App = () => {
                     </div> */}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
-                    <div style={{}}>
+                    <div style={{ display: 'flex' }}>
                         {/* <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
                             <div>{input[0]}</div>
                         </div> */}
-                        {/* <NeuralNetworkCanvas network={[new Array(input).map(n => ({ bias: n, output: n })), [this.weights_ih], [neuralNetwork.output]]} /> */}
+                        <NeuralNetworkCanvas network={canvas[0]} />
+                        <NeuralNetworkCanvas network={canvas[1]} />
                     </div>
                     {/* <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
                         <div>{output}</div>
