@@ -43,9 +43,10 @@ export class NeuralNetwork {
 
     assess(data) {
         const result = data.map(({inputs, targets}) => {
-            const { outputs } = this.predict(inputs)
+            const { outputs, hidden } = this.predict(inputs)
             return {
                 inputs,
+                hidden,
                 outputs: outputs.data,
                 accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - outputs.data[index].at(-1)), 0) / targets.length
             }
