@@ -49,9 +49,9 @@ export const NeuralNetworkCanvas = ({ network }) => {
                         const output = prevLayer[k].output;
                         context.beginPath();
                         context.moveTo(startPrevLayerPos + k * 100 + 50, (i - 1) * 100 + 50);
-                        context.lineTo(startHorizontalPos + j * 100 + 50, i * 100 + 50);
                         context.lineWidth = Math.abs(neuron.weights[k]) * 4;
-                        const strokeStyle = output >= 0 ? `rgba(255, 0, 0, ${output})` : `rgba(0, 255, 0, ${-output})`
+                        context.lineTo(startHorizontalPos + j * 100 + 50, i * 100 + 50);
+                        const strokeStyle = output >= 0 ? `rgba(0, 255, 0, ${output})` : `rgba(255, 0, 0, ${-output})`
                         context.strokeStyle = strokeStyle;
                         context.stroke();
 
@@ -59,8 +59,8 @@ export const NeuralNetworkCanvas = ({ network }) => {
                         const weightRgb = `rgb(${weight}, ${weight}, ${weight})`
                         context.beginPath();
                         context.moveTo(startPrevLayerPos + k * 100 + 50, (i - 1) * 100 + 50);
-                        context.lineTo(startHorizontalPos + j * 100 + 50, i * 100 + 50);
                         context.lineWidth = Math.abs(neuron.weights[k]) * 2;
+                        context.lineTo(startHorizontalPos + j * 100 + 50, i * 100 + 50);
                         context.strokeStyle = weightRgb;
                         context.stroke();
                     }
