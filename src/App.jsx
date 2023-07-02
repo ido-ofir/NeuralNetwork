@@ -1,4 +1,4 @@
-import React, { useMemo, useReducer, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { NeuralNetwork } from './NeuralNetwork2'
 import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
@@ -184,7 +184,16 @@ const useML = ({ inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, l
     const [neuralNetwork] = useState(() => new NeuralNetwork(inputs, hiddenLayer, outputs))
     const [canvas, setCanvas] = useState([])
 
-    useMemo(() => isPlaying ? intervalRef.current = setInterval(step, stepInterval) : clearInterval(intervalRef.current), [isPlaying])
+    useEffect(() => {
+        if (isPlaying) {
+            intervalRef.current = setInterval(() => step(), stepInterval)
+        }
+        else {
+            clearInterval(intervalRef.current)
+        }
+
+        return () => clearInterval(intervalRef.current)
+    }, [isPlaying])
 
     const train = (epochs) => {
         for (let i = 0; i < epochs; i++) {
