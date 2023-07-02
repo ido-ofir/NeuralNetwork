@@ -1,6 +1,6 @@
-import React, { useState, useRef, useMemo, useReducer } from 'react'
-import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
+import React, { useMemo, useReducer, useRef, useState } from 'react'
 import { NeuralNetwork } from './NeuralNetwork2'
+import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 
 // function sigmoid(x) {
@@ -176,7 +176,7 @@ const getCanvas = (network, assessment) => {
 }
 
 
-const useML = ({inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, learningRate = 100} = {}) => {
+const useML = ({ inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, learningRate = 100 } = {}) => {
     const intervalRef = useRef(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [stepsCount, step] = useReducer(stepsCount => stepsCount + 1, 0)
@@ -188,13 +188,13 @@ const useML = ({inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, le
 
     const train = (epochs) => {
         for (let i = 0; i < epochs; i++) {
-            data.map(({inputs, targets}) => neuralNetwork.train(inputs, targets))
+            data.map(({ inputs, targets }) => neuralNetwork.train(inputs, targets))
         }
         step()
     }
 
     useMemo(() => {
-        data.map(({inputs, targets}) => neuralNetwork.train(inputs, targets))
+        data.map(({ inputs, targets }) => neuralNetwork.train(inputs, targets))
         const output = neuralNetwork.assess(data)
         setOutput(output)
         setCanvas(output.map(assessment => getCanvas(neuralNetwork, assessment)))
@@ -213,7 +213,7 @@ const useML = ({inputs = 1, hiddenLayer = 1, outputs = 1, stepInterval = 100, le
 }
 
 const App = () => {
-    const { 
+    const {
         play,
         stop,
         step,
@@ -222,12 +222,12 @@ const App = () => {
         output,
         train,
         canvas,
-     } = useML({inputs, hiddenLayer, outputs})
+    } = useML({ inputs, hiddenLayer, outputs })
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#888' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                <div style={{ width: 500, height: 200, border: '1px solid black' }}>
+                <div style={{ width: 500, height: 200, border: '1px solid #fff', color: '#fff' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                         {
                             output.map((t, i) => (
