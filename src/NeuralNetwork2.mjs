@@ -22,63 +22,59 @@ export class NeuralNetwork {
     }
 
     predict(inputArray) {
-        const inputs = Matrix.fromArray(inputArray);
+        const input = Matrix.fromArray(inputArray);
 
-        const result = [inputs]
+        const outputs = [input]
 
         this.network.forEach(({ weights, bias }) => {
-            const outputs = Matrix.multiply(weights, result.at(-1));
-            outputs.add(bias);
-            outputs.map(this.sigmoid);
-            result.push(outputs)
+            const output = Matrix.multiply(weights, outputs.at(-1));
+            output.add(bias);
+            output.map(this.sigmoid);
+            outputs.push(output)
         })
 
         return {
-            inputs: result.at(0),
-            outputs: result.at(-1),
-            result,
+            input,
+            outputs: outputs.slice(1),
         }
     }
 
     assess(data) {
-        const result = data.map(({inputs, targets}) => {
-            const { outputs, result } = this.predict(inputs)
+        return data.map(({inputs, targets}) => {
+            const { outputs } = this.predict(inputs)
             return {
                 inputs,
-                result,
-                outputs: outputs.data,
-                accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - outputs.data[index].at(-1)), 0) / targets.length
+                outputs,
+                accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - outputs.at(-1).data[index].at(-1)), 0) / targets.length
             }
         })
-
-        return result
     }
 
     train(inputArray, targetArray) {
         // Feed forward
-        const { result } = this.predict(inputArray)
+        const { outputs, input } = this.predict(inputArray)
 
         let outputErrors
-        for (let i = result.length - 1; i >= 1; i--) {
+        for (let i = outputs.length - 1; i >= 0; i--) {
 
-            if (i === result.length - 1) {
-                outputErrors = Matrix.subtract(Matrix.fromArray(targetArray), result[i]);
+            if (i === outputs.length - 1) {
+                outputErrors = Matrix.subtract(Matrix.fromArray(targetArray), outputs[i]);
             }
             else {
-                outputErrors = Matrix.multiply(Matrix.transpose(this.network[i].weights), outputErrors);
+                outputErrors = Matrix.multiply(Matrix.transpose(this.network[i + 1].weights), outputErrors);
             }
             // Calculate gradient
-            let gradients = result[i].map(this.dsigmoid);
+            let gradients = outputs[i].map(this.dsigmoid);
             gradients.multiply(outputErrors);
             gradients.multiply(this.learningRate);
 
             // Calculate deltas
-            let weights_deltas = Matrix.multiply(gradients, Matrix.transpose(result[i - 1]));
+            let weights_deltas = Matrix.multiply(gradients, Matrix.transpose(i === 0 ? input : outputs[i - 1]));
 
             // Adjust the weights by deltas
-            this.network[i - 1].weights.add(weights_deltas)
+            this.network[i].weights.add(weights_deltas)
             // Adjust the bias by its deltas
-            this.network[i - 1].bias.add(gradients)
+            this.network[i].bias.add(gradients)
         }
     }
 }

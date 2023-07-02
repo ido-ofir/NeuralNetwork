@@ -29,7 +29,7 @@ const getCanvas = (neuralNetwork, assessment) => {
             layers.at(-1).push({
                 weights,
                 bias: layer.bias.data[i][0],
-                output: assessment.result[j + 1].data[i][0],
+                output: assessment.outputs[j].data[i][0],
             })
         })
     })
@@ -66,9 +66,9 @@ const useML = ({ inputs, structure, learningRate } = {}) => {
 
     useMemo(() => {
         data.map(({ inputs, targets }) => neuralNetwork.train(inputs, targets))
-        const output = neuralNetwork.assess(data)
-        setOutput(output)
-        setCanvas(output.map(assessment => getCanvas(neuralNetwork, assessment)))
+        const assessments = neuralNetwork.assess(data)
+        setOutput(assessments)
+        setCanvas(assessments.map(assessment => getCanvas(neuralNetwork, assessment)))
     }, [stepsCount])
 
     return {
@@ -112,7 +112,7 @@ const App = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                                         <div>Output = </div>
                                         {
-                                            JSON.stringify(t.outputs.map(t => t.map(w => w.toFixed(2))))
+                                            JSON.stringify(t.outputs.at(-1).data.map(t => t.map(w => w.toFixed(2))))
                                         }
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
