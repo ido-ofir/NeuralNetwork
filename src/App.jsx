@@ -4,7 +4,8 @@ import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 const config = {
     inputs: 2,
-    structure: [3, 4, 3, 2],
+    layers: [],
+    outputs: 2,
     learningRate: 0.2,
 }
 
@@ -23,7 +24,7 @@ const getCanvas = (neuralNetwork, assessment) => {
     const inputs = assessment.inputs.map(t => ({ bias: t, output: t }))
     const layers = [inputs]
 
-    neuralNetwork.network.forEach((layer, j) => {
+    neuralNetwork.layers.forEach((layer, j) => {
         layers.push([])
         layer.weights.data.map((weights, i) => {
             layers.at(-1).push({
@@ -38,12 +39,12 @@ const getCanvas = (neuralNetwork, assessment) => {
 }
 
 
-const useML = ({ inputs, structure, learningRate } = {}) => {
+const useML = (MLConfig, data) => {
     const intervalRef = useRef(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [stepsCount, step] = useReducer(stepsCount => stepsCount + 1, 0)
     const [output, setOutput] = useState([])
-    const [neuralNetwork] = useState(() => new NeuralNetwork(inputs, structure, learningRate))
+    const [neuralNetwork] = useState(() => new NeuralNetwork(MLConfig))
     const [canvas, setCanvas] = useState([])
 
     useEffect(() => {
@@ -93,7 +94,7 @@ const App = () => {
         output,
         train,
         canvas,
-    } = useML(config)
+    } = useML(config, data)
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -107,6 +108,12 @@ const App = () => {
                                         <div>Input = </div>
                                         {
                                             JSON.stringify(t.inputs.map(t => t.toFixed(2)))
+                                        }
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                                        <div>Target = </div>
+                                        {
+                                            JSON.stringify(t.targets.map(t => t.toFixed(2)))
                                         }
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>

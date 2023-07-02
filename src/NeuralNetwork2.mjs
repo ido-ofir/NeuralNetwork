@@ -1,11 +1,13 @@
 import { Matrix } from './Matrix.mjs';
 
 export class NeuralNetwork {
-    constructor(inputNodes, structure, learningRate = 0.2) {
+    constructor({inputs, layers, outputs, learningRate = 0.2}) {
         this.learningRate = learningRate;
-        this.network = structure.map((layer, index) => {
+
+        const prevLayers = [inputs, ...layers];
+        this.layers = [...layers, outputs].map((layer, index) => {
             return {
-                weights: new Matrix(layer, index ? structure[index - 1] : inputNodes).randomize(),
+                weights: new Matrix(layer, prevLayers[index]).randomize(),
                 bias: new Matrix(layer, 1).randomize(),
             }
         })
@@ -26,7 +28,7 @@ export class NeuralNetwork {
 
         const outputs = [input]
 
-        this.network.forEach(({ weights, bias }) => {
+        this.layers.forEach(({ weights, bias }) => {
             const output = Matrix.multiply(weights, outputs.at(-1));
             output.add(bias);
             output.map(this.sigmoid);
@@ -44,6 +46,7 @@ export class NeuralNetwork {
             const { outputs } = this.predict(inputs)
             return {
                 inputs,
+                targets,
                 outputs,
                 accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - outputs.at(-1).data[index].at(-1)), 0) / targets.length
             }
@@ -54,27 +57,27 @@ export class NeuralNetwork {
         // Feed forward
         const { outputs, input } = this.predict(inputArray)
 
-        let outputErrors
+        const prevOutputs = [input, ...outputs.slice(0, -1)]
+
+        let outputErrors = Matrix.subtract(Matrix.fromArray(targetArray), outputs.at(-1))
+
         for (let i = outputs.length - 1; i >= 0; i--) {
 
-            if (i === outputs.length - 1) {
-                outputErrors = Matrix.subtract(Matrix.fromArray(targetArray), outputs[i]);
-            }
-            else {
-                outputErrors = Matrix.multiply(Matrix.transpose(this.network[i + 1].weights), outputErrors);
-            }
             // Calculate gradient
-            let gradients = outputs[i].map(this.dsigmoid);
+            const gradients = outputs[i].map(this.dsigmoid);
             gradients.multiply(outputErrors);
             gradients.multiply(this.learningRate);
-
+            
             // Calculate deltas
-            let weights_deltas = Matrix.multiply(gradients, Matrix.transpose(i === 0 ? input : outputs[i - 1]));
-
+            const weights_deltas = Matrix.multiply(gradients, Matrix.transpose(prevOutputs[i]));
+            
             // Adjust the weights by deltas
-            this.network[i].weights.add(weights_deltas)
+            this.layers[i].weights.add(weights_deltas)
             // Adjust the bias by its deltas
-            this.network[i].bias.add(gradients)
+            this.layers[i].bias.add(gradients)
+
+            // Prepare next outputErrors
+            outputErrors = Matrix.multiply(Matrix.transpose(this.layers[i].weights), outputErrors);
         }
     }
 }
