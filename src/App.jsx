@@ -4,7 +4,7 @@ import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 const config = {
     inputs: 2,
-    layers: [],
+    layers: [2, 2],
     outputs: 2,
     learningRate: 0.2,
 }
@@ -97,94 +97,64 @@ const App = () => {
     } = useML(config, data)
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                <div style={{ width: 500, height: 100, border: '1px solid #fff', color: '#fff' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                        {
-                            output.map((t, i) => (
-                                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-around' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                                        <div>Input = </div>
-                                        {
-                                            JSON.stringify(t.inputs.map(t => t.toFixed(2)))
-                                        }
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                                        <div>Target = </div>
-                                        {
-                                            JSON.stringify(t.targets.map(t => t.toFixed(2)))
-                                        }
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                                        <div>Output = </div>
-                                        {
-                                            JSON.stringify(t.outputs.at(-1).data.map(t => t.map(w => w.toFixed(2))))
-                                        }
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                                        <span>Accuracy = </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>{t.accuracy.toFixed(2)}</div>
-                                    </div>
-                                </div>
-                            ))
-                        }
-                    </div>
-                    {/* <div>
-                        {
-                            mlp.layers.map((layer, i) => (
-                                <div key={i} style={{}}>
-                                    {
-                                        layer.map(t => (
-                                            <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                                                {t.weights.map((w, i) => (
-                                                    <div key={i}>{w.toFixed(2)}</div>
-                                                ))}
-                                            </div>
-                                        ))
-                                    }
-                                    {
-                                        layer.map(t => (
-                                            <div key={t} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-                                                <div>{t.bias.toFixed(2)}</div>
-                                                <div>{t.output.toFixed(2)}</div>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
-                            ))
-                        }
+        <div style={{ height: '100%', position: 'relative', fontSize: '20px', color: '#fff' }}>
 
-                    </div> */}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20 }}>
-                    <div style={{ display: 'flex' }}>
-                        {/* <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
-                            <div>{input[0]}</div>
-                        </div> */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20, flex: 1, position: 'relative' }}>
+                <div style={{ display: 'flex', flex: 1 }}>
+                    <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
                         <NeuralNetworkCanvas network={canvas[0]} />
                         <NeuralNetworkCanvas network={canvas[1]} />
                     </div>
-                    {/* <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around', fontSize: '2rem' }}>
-                        <div>{output}</div>
-                    </div> */}
-                    <div>
-                        <div>
-                            <button onClick={step}>
-                                Step
-                            </button>
-                            <button onClick={isPlaying ? stop : play}>
-                                {isPlaying ? 'Stop' : 'Play'}
-                            </button>
-                            <button onClick={() => train(10000)}>
-                                10,000 epochs
-                            </button>
-                            <button onClick={() => train(100000)}>
-                                100,000 epochs
-                            </button>
-                        </div>
-                    </div>
                 </div>
+                <div>
+
+                </div>
+            </div>
+            <div style={{ border: '1px solid #fff', position: 'absolute', top: 20, left: 20, padding: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                    {
+                        output.map((t, i) => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-around' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                                    <div>Input = </div>
+                                    {
+                                        JSON.stringify(t.inputs.map(t => t.toFixed(2)))
+                                    }
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                                    <div>Target = </div>
+                                    {
+                                        JSON.stringify(t.targets.map(t => t.toFixed(2)))
+                                    }
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                                    <div>Output = </div>
+                                    {
+                                        JSON.stringify(t.outputs.at(-1).data.map(t => t.map(w => w.toFixed(2))))
+                                    }
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+                                    <span>Accuracy = </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>{t.accuracy.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        ))
+                    }
+                </div>
+            </div>
+            <div style={{ border: '1px solid #fff', position: 'absolute', bottom: 20, left: 20, right: 20, padding: 6, display: 'flex', justifyContent: 'center' }}>
+                <button onClick={step}>
+                    Step
+                </button>
+                <button onClick={isPlaying ? stop : play}>
+                    {isPlaying ? 'Stop' : 'Play'}
+                </button>
+                <button onClick={() => train(10000)}>
+                    10,000 epochs
+                </button>
+                <button onClick={() => train(100000)}>
+                    100,000 epochs
+                </button>
             </div>
         </div>
     )

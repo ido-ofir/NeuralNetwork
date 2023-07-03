@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 function sigmoid(x) {
     return 1 / (1 + Math.exp(-x));
@@ -17,12 +19,80 @@ const getColor = (value) => {
 
 const getOutputColor = (value) => `rgba(100, 100, 255, ${value})`
 
+const createNeuron = () => {
+    const neuron = new THREE.Group();
+    const geometry = new THREE.SphereGeometry(1, 16, 8);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true })
+    // const material = new THREE.LineBasicMaterial({
+    //     color: 0xffffff,
+    //     linewidth: 0.001,
+    //     linecap: 'round', //ignored by WebGLRenderer
+    //     linejoin: 'round' //ignored by WebGLRenderer
+    // });
+    const sphere = new THREE.Mesh(geometry, material);
+    neuron.add(sphere)
+    return neuron
+}
+
+const createLink = () => {
+    const link = new THREE.Group();
+    const geometry = new THREE.CylinderGeometry(.1, .1, 4, 6);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true })
+    // const material = new THREE.LineBasicMaterial({
+    //     color: 0xffffff,
+    //     linewidth: 0.001,
+    //     linecap: 'round', //ignored by WebGLRenderer
+    //     linejoin: 'round' //ignored by WebGLRenderer
+    // });
+    const mesh = new THREE.Mesh(geometry, material);
+    link.add(mesh)
+    return link
+}
+
 export const NeuralNetworkCanvas = ({ network, structureColor = "#fff", backgroundColor = "#444", getValueColor = getOutputColor }) => {
-    const canvasRef = useRef(null);
+    const containerRef = useRef(null);
+    const threeRef = useRef(null);
+
+    const animate = () => {
+        requestAnimationFrame(animate);
+        threeRef.current.controls.update();
+        threeRef.current.render()
+    }
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableZoom = true
+        controls.listenToKeyEvents(window);
+
+        const light = new THREE.AmbientLight(0x404040);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        scene.add(light);
+        scene.add(directionalLight);
+        scene.add(createNeuron());
+        const link = createLink()
+        window.link = link
+        scene.add(link);
+
+        camera.position.z = 20;
+        controls.update();
+        threeRef.current = {
+            scene,
+            camera,
+            controls,
+            render() { renderer.render(scene, camera); }
+        }
+        containerRef.current.appendChild(renderer.domElement);
+        animate()
+    }, [])
+    useEffect(() => {
+        threeRef.current.controls.update();
+        threeRef.current.render()
+        return;
 
         // Determine size of canvas based on network size
         const layerCount = network.length;
@@ -67,7 +137,7 @@ export const NeuralNetworkCanvas = ({ network, structureColor = "#fff", backgrou
                             context.lineWidth = Math.abs(neuron.weights[k]) * 4;
                             context.strokeStyle = backgroundColor;
                             context.stroke();
-                            context.strokeStyle = neuron.weights[k] > 0 ? `rgba(100, 100, 255, ${prevNeuron.output})` : `rgba(155, 0, 0, ${prevNeuron.output})`;
+                            context.strokeStyle = neuron.weights[k] > 0 ? `rgba(100, 100, 255, ${prevNeuron.output})` : `rgba(155, 0, 0, ${1 - prevNeuron.output})`;
                             context.stroke();
                         }
                     }
@@ -105,7 +175,7 @@ export const NeuralNetworkCanvas = ({ network, structureColor = "#fff", backgrou
     }, [network]);
 
     return (
-        <canvas ref={canvasRef} />
+        <div style={{ width: '100%', height: '100%' }} ref={containerRef}></div>
     );
 }
 
