@@ -21,7 +21,7 @@ const data = [
 ]
 
 const getCanvas = (neuralNetwork, assessment) => {
-    const inputs = assessment.inputs.map(t => ({ bias: t, output: t }))
+    const inputs = assessment.inputs.map(t => ({ bias: 0, output: t }))
     const layers = [inputs]
 
     neuralNetwork.layers.forEach((layer, j) => {

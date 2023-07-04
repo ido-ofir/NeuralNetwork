@@ -17,7 +17,7 @@ const getColor = (value) => {
 
 const getOutputColor = (value) => `rgba(100, 100, 255, ${value})`
 
-export const NeuralNetworkCanvas = ({ network, structureColor = "#fff", backgroundColor = "#444", getValueColor = getOutputColor }) => {
+export const NeuralNetworkCanvas = ({ network, structureColor = "#aaa", backgroundColor = "#444", getValueColor = getOutputColor }) => {
     const canvasRef = useRef(null);
 
     useEffect(() => {
@@ -78,7 +78,7 @@ export const NeuralNetworkCanvas = ({ network, structureColor = "#fff", backgrou
                     context.beginPath();
                     context.lineWidth = 4;
                     context.arc(startHorizontalPos + neuronIndex * 100 + 50, layerIndex * 100 + 50, sigmoid(neuron.bias) * 30, 0, 2 * Math.PI, false);
-                    context.strokeStyle = structureColor;
+                    context.strokeStyle = neuron.bias >= 0 ? structureColor : "#f00";
                     context.stroke();
                     context.fillStyle = backgroundColor;
                     context.fill();
