@@ -3,12 +3,28 @@ import { Matrix } from './Matrix.mjs';
 export class NeuralNetwork {
     constructor({inputs, layers, outputs, learningRate = 0.2}) {
         this.learningRate = learningRate;
+        this.config = {inputs, layers, outputs}
 
+        this.initialize()
+    }
+
+    initialize = () => {
+        const {inputs, layers, outputs} = this.config
         const prevLayers = [inputs, ...layers];
-        this.layers = [...layers, outputs].map((layer, index) => {
+        this.initialLayers = [...layers, outputs].map((layer, index) => {
             return {
                 weights: new Matrix(layer, prevLayers[index]).randomize(),
                 bias: new Matrix(layer, 1).randomize(),
+            }
+        })
+        this.reset()
+    }
+
+    reset = () => {
+        this.layers = this.initialLayers.map((layer, index) => {
+            return {
+                weights: new Matrix(layer.weights.rows, layer.weights.cols).map((_, i, j) => layer.weights.data[i][j]),
+                bias: new Matrix(layer.bias.rows, layer.bias.cols).map((_, i, j) => layer.bias.data[i][j]),
             }
         })
     }

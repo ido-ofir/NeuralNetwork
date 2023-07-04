@@ -4,19 +4,27 @@ import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 const config = {
     inputs: 2,
-    layers: [2, 2],
-    outputs: 2,
-    learningRate: 0.2,
+    layers: [2],
+    outputs: 1,
+    learningRate: 1,
 }
 
 const data = [
     {
         inputs: [0, 1],
-        targets: [1, 0],
+        targets: [1],
     },
     {
         inputs: [1, 0],
-        targets: [0, 1],
+        targets: [1],
+    },
+    {
+        inputs: [0, 0],
+        targets: [0],
+    },
+    {
+        inputs: [1, 1],
+        targets: [0],
     }
 ]
 
@@ -76,6 +84,8 @@ const useML = (MLConfig, data) => {
         play: () => setIsPlaying(true),
         stop: () => setIsPlaying(false),
         step,
+        reset: neuralNetwork.reset,
+        initialize: neuralNetwork.initialize,
         isPlaying,
         stepsCount,
         output,
@@ -89,6 +99,8 @@ const App = () => {
         play,
         stop,
         step,
+        reset,
+        initialize,
         isPlaying,
         stepsCount,
         output,
@@ -104,13 +116,15 @@ const App = () => {
                     <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
                         <NeuralNetworkCanvas network={canvas[0]} />
                         <NeuralNetworkCanvas network={canvas[1]} />
+                        <NeuralNetworkCanvas network={canvas[2]} />
+                        <NeuralNetworkCanvas network={canvas[3]} />
                     </div>
                 </div>
                 <div>
 
                 </div>
             </div>
-            <div style={{ border: '1px solid #fff', position: 'absolute', top: 20, left: 20, padding: 10 }}>
+            <div style={{ border: '1px solid #fff', position: 'absolute', bottom: 60, left: 20, padding: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                     {
                         output.map((t, i) => (
@@ -143,6 +157,12 @@ const App = () => {
                 </div>
             </div>
             <div style={{ border: '1px solid #fff', position: 'absolute', bottom: 20, left: 20, right: 20, padding: 6, display: 'flex', justifyContent: 'center' }}>
+                <button onClick={initialize}>
+                    Re-Initialize
+                </button>
+                <button onClick={reset}>
+                    Reset
+                </button>
                 <button onClick={step}>
                     Step
                 </button>
