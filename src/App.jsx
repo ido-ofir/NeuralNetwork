@@ -3,28 +3,28 @@ import { NeuralNetwork } from './NeuralNetwork2'
 import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 const config = {
-    inputs: 2,
+    inputs: 3,
     layers: [2],
-    outputs: 1,
-    learningRate: 1,
+    outputs: 2,
+    learningRate: 0.2,
 }
 
 const data = [
     {
-        inputs: [0, 1],
-        targets: [1],
+        inputs: [0, 1, 0],
+        targets: [1, 1],
     },
     {
-        inputs: [1, 0],
-        targets: [1],
+        inputs: [1, 0, 1],
+        targets: [1, 0],
     },
     {
-        inputs: [0, 0],
-        targets: [0],
+        inputs: [0, 0, 0],
+        targets: [0, 1],
     },
     {
-        inputs: [1, 1],
-        targets: [0],
+        inputs: [1, 1, 1],
+        targets: [0, 0],
     }
 ]
 
@@ -50,11 +50,11 @@ const getCanvas = (neuralNetwork, assessment) => {
 const useML = (MLConfig, data) => {
     const intervalRef = useRef(null)
     const [isPlaying, setIsPlaying] = useState(false)
-    const [stepsCount, step] = useReducer(stepsCount => stepsCount + 1, 0)
+    const [stepsCount, step] = useReducer((stepsCount, newStepsCount) => newStepsCount ?? (stepsCount + 1), 0)
     const [output, setOutput] = useState([])
     const [neuralNetwork] = useState(() => new NeuralNetwork(MLConfig))
     const [canvas, setCanvas] = useState([])
-
+    window.neuralNetwork = neuralNetwork
     useEffect(() => {
         if (isPlaying) {
             intervalRef.current = setInterval(() => step(), 100)
@@ -68,13 +68,13 @@ const useML = (MLConfig, data) => {
 
     const train = (epochs) => {
         for (let i = 0; i < epochs; i++) {
-            data.map(({ inputs, targets }) => neuralNetwork.train(inputs, targets))
+            neuralNetwork.train(data)
         }
-        step()
+        step(stepsCount + epochs)
     }
 
     useMemo(() => {
-        data.map(({ inputs, targets }) => neuralNetwork.train(inputs, targets))
+        neuralNetwork.train(data)
         const assessments = neuralNetwork.assess(data)
         setOutput(assessments)
         setCanvas(assessments.map(assessment => getCanvas(neuralNetwork, assessment)))
@@ -83,9 +83,9 @@ const useML = (MLConfig, data) => {
     return {
         play: () => setIsPlaying(true),
         stop: () => setIsPlaying(false),
-        step,
-        reset: neuralNetwork.reset,
-        initialize: neuralNetwork.initialize,
+        step: () => step(),
+        reset: () => {neuralNetwork.reset(); step(0)},
+        initialize: () => {neuralNetwork.initialize(); step(0)},
         isPlaying,
         stepsCount,
         output,
@@ -169,12 +169,20 @@ const App = () => {
                 <button onClick={isPlaying ? stop : play}>
                     {isPlaying ? 'Stop' : 'Play'}
                 </button>
+                <button onClick={() => train(100)}>
+                    100 epochs
+                </button>
+                <button onClick={() => train(1000)}>
+                    1,000 epochs
+                </button>
                 <button onClick={() => train(10000)}>
                     10,000 epochs
                 </button>
                 <button onClick={() => train(100000)}>
                     100,000 epochs
                 </button>
+                Steps: {stepsCount}
+                Accuracy: {(output.reduce((a, b) => a + b.accuracy, 0) / output.length).toFixed(2)}
             </div>
         </div>
     )

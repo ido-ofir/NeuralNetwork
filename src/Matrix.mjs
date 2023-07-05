@@ -16,8 +16,7 @@ export class Matrix {
             throw 'Columns and Rows of A must match Columns and Rows of B.'
         }
         // Return a new Matrix a-b
-        return new Matrix(a.rows, a.cols)
-            .map((_, i, j) => a.data[i][j] - b.data[i][j]);
+        return new Matrix(a.rows, a.cols).map((_, i, j) => a.data[i][j] - b.data[i][j]);
     }
 
     // Matrix multiplication
@@ -40,8 +39,31 @@ export class Matrix {
 
     // Transpose matrix
     static transpose(matrix) {
-        return new Matrix(matrix.cols, matrix.rows)
-            .map((_, i, j) => matrix.data[j][i]);
+        return new Matrix(matrix.cols, matrix.rows).map((_, i, j) => matrix.data[j][i]);
+    }
+
+    static map(matrix, func) {
+        return new Matrix(matrix.rows, matrix.cols).map((_, i, j) => func(matrix.data[i][j], i, j));
+    }
+
+    removeCol(index) {
+        this.data.forEach(cols => cols.splice(index, 1));
+        this.cols--;
+    }
+    
+    removeRow(index) {
+        this.data.splice(index, 1);
+        this.rows--;
+    }
+
+    addCol() {
+        this.data.forEach(cols => cols.push(Math.random() * 2 - 1));
+        this.cols++;
+    }
+    
+    addRow() {
+        this.data.push(Array(this.cols).fill(0).map(() => Math.random() * 2 - 1));
+        this.rows++;
     }
 
     // Fill the matrix with random numbers
