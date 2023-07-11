@@ -2,31 +2,55 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { NeuralNetwork } from './NeuralNetwork2'
 import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
+// const config = {
+//     inputs: 2,
+//     layers: [2],
+//     outputs: 2,
+//     learningRate: 0.2,
+//     data: [
+//         {
+//             inputs: [0, 1],
+//             targets: [1, 1],
+//         },
+//         {
+//             inputs: [1, 0],
+//             targets: [1, 0],
+//         },
+//         {
+//             inputs: [0, 0],
+//             targets: [0, 1],
+//         },
+//         {
+//             inputs: [1, 1],
+//             targets: [0, 0],
+//         }
+//     ]
+// }
+
 const config = {
     inputs: 3,
-    layers: [2],
+    layers: [3,3],
     outputs: 2,
     learningRate: 0.2,
+    data: [
+        {
+            inputs: [0, 1, 0],
+            targets: [1, 1],
+        },
+        {
+            inputs: [1, 0, 1],
+            targets: [1, 0],
+        },
+        {
+            inputs: [0, 0, 0],
+            targets: [0, 1],
+        },
+        {
+            inputs: [1, 1, 1],
+            targets: [0, 0],
+        }
+    ]
 }
-
-const data = [
-    {
-        inputs: [0, 1, 0],
-        targets: [1, 1],
-    },
-    {
-        inputs: [1, 0, 1],
-        targets: [1, 0],
-    },
-    {
-        inputs: [0, 0, 0],
-        targets: [0, 1],
-    },
-    {
-        inputs: [1, 1, 1],
-        targets: [0, 0],
-    }
-]
 
 const getCanvas = (neuralNetwork, assessment) => {
     const inputs = assessment.inputs.map(t => ({ bias: 0, output: t }))
@@ -37,7 +61,7 @@ const getCanvas = (neuralNetwork, assessment) => {
         layer.weights.data.map((weights, i) => {
             layers.at(-1).push({
                 weights,
-                bias: layer.bias.data[i][0],
+                bias: layer.bias.data[i],
                 output: assessment.outputs[j].data[i][0],
             })
         })
@@ -47,7 +71,7 @@ const getCanvas = (neuralNetwork, assessment) => {
 }
 
 
-const useML = (MLConfig, data) => {
+const useML = (MLConfig) => {
     const intervalRef = useRef(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [stepsCount, step] = useReducer((stepsCount, newStepsCount) => newStepsCount ?? (stepsCount + 1), 0)
@@ -68,14 +92,14 @@ const useML = (MLConfig, data) => {
 
     const train = (epochs) => {
         for (let i = 0; i < epochs; i++) {
-            neuralNetwork.train(data)
+            neuralNetwork.train(MLConfig.data)
         }
         step(stepsCount + epochs)
     }
 
     useMemo(() => {
-        neuralNetwork.train(data)
-        const assessments = neuralNetwork.assess(data)
+        neuralNetwork.train(MLConfig.data)
+        const assessments = neuralNetwork.assess(MLConfig.data)
         setOutput(assessments)
         setCanvas(assessments.map(assessment => getCanvas(neuralNetwork, assessment)))
     }, [stepsCount])
@@ -106,7 +130,7 @@ const App = () => {
         output,
         train,
         canvas,
-    } = useML(config, data)
+    } = useML(config)
 
     return (
         <div style={{ height: '100%', position: 'relative', fontSize: '20px', color: '#fff' }}>
@@ -132,13 +156,13 @@ const App = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                                     <div>Input = </div>
                                     {
-                                        JSON.stringify(t.inputs.map(t => t.toFixed(2)))
+                                        JSON.stringify(t.inputs.map(t => t))
                                     }
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                                     <div>Target = </div>
                                     {
-                                        JSON.stringify(t.targets.map(t => t.toFixed(2)))
+                                        JSON.stringify(t.targets.map(t => t))
                                     }
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
