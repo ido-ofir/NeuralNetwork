@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { NeuralNetwork } from './NeuralNetwork2'
 import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
+window.NeuralNetwork = NeuralNetwork
+
 // const config = {
 //     inputs: 2,
 //     layers: [2],
@@ -62,7 +64,7 @@ const getCanvas = (neuralNetwork, assessment) => {
             layers.at(-1).push({
                 weights,
                 bias: layer.bias.data[i],
-                output: assessment.outputs[j].data[i][0],
+                output: assessment.outputs[j].data[i],
             })
         })
     })
@@ -168,7 +170,7 @@ const App = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                                     <div>Output = </div>
                                     {
-                                        JSON.stringify(t.outputs.at(-1).data.map(t => t.map(w => w.toFixed(2))))
+                                        JSON.stringify(t.outputs.at(-1).data.map(t => t.toFixed(2)))
                                     }
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>

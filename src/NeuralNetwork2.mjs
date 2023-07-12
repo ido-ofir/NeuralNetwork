@@ -9,6 +9,8 @@ export class NeuralNetwork {
         this.initialize()
     }
 
+    static Matrix = Matrix
+
     initialize = () => {
         const {inputs, layers, outputs} = this.config
         const prevLayers = [inputs, ...layers];
@@ -66,12 +68,12 @@ export class NeuralNetwork {
     }
 
     predict  = (inputArray) => {
-        const input = new Matrix([inputArray.length, 1]).map((_, i) => inputArray[i])
+        const input = new Matrix([inputArray.length], inputArray)
 
         const outputs = [input]
 
         this.layers.forEach(({ weights, bias }) => {
-            const output = Matrix.crossMultiply(weights, new Matrix([outputs.at(-1).dimentions[0], 1]).map((_, i, j) => outputs.at(-1).data[i]));
+            const output = Matrix.crossMultiply(weights, outputs.at(-1));
             output.add(bias);
             output.map(this.sigmoid);
             outputs.push(output)
@@ -104,7 +106,7 @@ export class NeuralNetwork {
     
             const prevOutputs = [input, ...outputs.slice(0, -1)]
     
-            this.outputErrors = [new Matrix([targets.length, 1]).map((_, i) => targets[i]).subtract(outputs.at(-1))]
+            this.outputErrors = [new Matrix([targets.length], targets).subtract(outputs.at(-1))]
     
             for (let i = outputs.length - 1; i >= 0; i--) {
     
@@ -113,17 +115,17 @@ export class NeuralNetwork {
                 const output_deltas = Matrix.copy(this.outputErrors[0]).multiply(output_sensitivity).multiply(this.learningRate / accuracy);
                 
                 // Prepare next outputErrors
-                this.outputErrors.unshift(Matrix.crossMultiply(Matrix.transpose(this.layers[i].weights), new Matrix([this.outputErrors[0].dimentions[0], 1]).map((_, j, k) => this.outputErrors[0].data[j]).subtract(output_deltas)))
+                this.outputErrors.unshift(Matrix.crossMultiply(this.layers[i].weights, Matrix.copy(this.outputErrors[0]).subtract(output_deltas), [[0, 0]]))
 
                 // Calculate deltas
                 // const prevOutputsSensitivity = Vector.map(prevOutputs[i], this.dsigmoid);
-                const weights_deltas = Matrix.crossMultiply(output_deltas, new Matrix([1, prevOutputs[i].dimentions[0]]).map((_, j, k) => prevOutputs[i].data[k][0]));
+                const weights_deltas = Matrix.crossMultiply(output_deltas, prevOutputs[i], []);
                 // const weights_deltas = output_deltas.multiply(prevOutputs[i]);
                 
                 // Adjust the weights by deltas
                 this.layers[i].weights.add(weights_deltas)
                 // Adjust the bias by its deltas
-                this.layers[i].bias.add(new Matrix([output_deltas.dimentions[0]]).map((_, j) => output_deltas.data[j][0]))
+                this.layers[i].bias.add(output_deltas)
             }
 
             outputErrors.push(this.outputErrors)
@@ -138,9 +140,9 @@ export class NeuralNetwork {
         const layersStatistics = []
 
         assessment.forEach(({ inputs, targets, outputs, accuracy }, i) => {
-            const outputErrors = [new Matrix([targets.length, 1]).map((_, i) => targets[i]).subtract(outputs.at(-1))]
+            const outputErrors = [new Matrix([targets.length], targets).subtract(outputs.at(-1))]
             for (let h = outputs.length - 1; h >= 0; h--) {
-                outputErrors.unshift(Matrix.crossMultiply(Matrix.transpose(this.layers[h].weights), new Matrix([outputErrors[0].dimentions[0], 1]).map((_, j, k) => outputErrors[0].data[j])))
+                outputErrors.unshift(Matrix.crossMultiply(this.layers[h].weights, Matrix.copy(outputErrors[0]).subtract(Matrix.copy(outputErrors[0]).multiply(Matrix.copy(outputs[h]).map(this.dsigmoid)).multiply(this.learningRate / accuracy)), [[0, 0]]))
             }
             outputs.forEach((output, j) => {
                 if(!layersStatistics[j]) layersStatistics.push([])
@@ -170,7 +172,7 @@ export class NeuralNetwork {
                 if(neuralNetwork.unsigmoid(1 - estimatedMaxSensitivity) <= 1) return
                 if(neuralNetwork.unsigmoid(estimatedAccuracyPerLayer[layer]) > accuracy) return
 
-                layersToAddNodesTo.push(layer)
+                // layersToAddNodesTo.push(layer)
                 if(layer < estimatedMaxSensitivityPerLayer.length - 1){
                     layersToAddNodesTo.push(layer)
                 }

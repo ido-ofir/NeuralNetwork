@@ -7,72 +7,42 @@ const initializeDimentions = (dimentions, getValue = v => v) => {
 }
 
 export class Matrix {
-    constructor(dimentions) {
+    constructor(dimentions, arr) {
         this.dimentions = dimentions
 
         this.data = initializeDimentions(dimentions)
+
+        if (arr) {
+            this.map((_, ...indexes) => arr[indexes.reduce((a, b, i) => a + [b, ...dimentions.filter((_, j) => j > i)].reduce((x, z) => x * z, 1), 1) - 1])
+        }
     }
 
-    static crossMultiply(...matrixes) {
-        // for (let i = 1; i < matrixes.length; i++) {
-        //     matrixes[i].dimentions
-        //     if (matrixes[i].dimentions.some((d, j) => {
-        //         return d !== matrixes[i - 1].dimentions[j]
-        //     }))
-        //     for (let j = i; j >= 1; j--) {
-        //         if(matrixes[j - 1].dimentions[i] !== matrixes[j].dimentions[i - 1]) {
-        //             throw `dimentions[${i}] of matrix ${j - 1} must match dimentions[${i - 1}] of matrix ${j}`
-        //         }
-        //     }
-        // }
-
-        // const newDimentions = matrixes.map((m, i) => m.dimentions[i])
-        // return new Matrix(newDimentions)
-        //     .map((e, indexes) => {
-        //         return matrixes.reduce((sum, m, i) => {
-        //             return sum + m.data[indexes[i]][i]
-        //         }, 0)
-        //         let sum = 0;
-        //         for (let k = 0; k < a.cols; k++) {
-        //             sum += a.data[i][k] * b.data[k][j];
-        //         }
-        //         return sum;
-        //     });
-
-        if (matrixes[0].dimentions.length !== 2 || matrixes[1].dimentions.length !== 2) {
-            throw 'multiplication is not supported for other than 2 dimensions.'
-        }
-        if (matrixes[0].dimentions[1] !== matrixes[1].dimentions[0]) {
-            throw 'dimentions[1] of A must match dimentions[0] of B.'
+    static crossMultiply(a, b, dimentionsIntersections = [[1, 0]]) {
+        const invalidDiIndex = dimentionsIntersections.findIndex(di => a.dimentions[di[0]] !== b.dimentions[[di[1]]])
+        if (invalidDiIndex !== -1) {
+            throw `dimention ${dimentionsIntersections[invalidDiIndex][0]} of matrix ${a} must match dimention ${dimentionsIntersections[invalidDiIndex][1]} of matrix ${b}`
         }
 
-        // if (matrixes[1].dimentions.length === 1) {
-        //     return new Matrix([matrixes[0].dimentions[0]])
-        //         .map((e, i) => {
-        //             let sum = 0;
-        //             for (let k = 0; k < matrixes[0].dimentions[1]; k++) {
-        //                 sum += matrixes[0].data[i][k] * matrixes[1].data[k];
-        //             }
-        //             return sum;
-        //         })
-        // }
-
-        return new Matrix([matrixes[0].dimentions[0], matrixes[1].dimentions[1]])
-            .map((e, i, j) => {
+        const newDimentions = a.dimentions.filter((_, i) => !dimentionsIntersections.map(di => di[0]).includes(i)).concat(b.dimentions.filter((_, i) => !dimentionsIntersections.map(di => di[1]).includes(i)))
+        return new Matrix(newDimentions)
+            .map((e, ...indexes) => {
                 let sum = 0;
-                for (let k = 0; k < matrixes[0].dimentions[1]; k++) {
-                    sum += matrixes[0].data[i][k] * matrixes[1].data[k][j];
+                if (dimentionsIntersections.length) {
+                    for (let m = 0; m < dimentionsIntersections.length; m++) {
+                        for (let k = 0; k < a.dimentions[dimentionsIntersections[m][0]]; k++) {
+                            const aIndexes = a.dimentions.map((d, i) => i === dimentionsIntersections[m][0] ? k : i > dimentionsIntersections[m][0] ? indexes[i - 1] : indexes[i])
+                            const bIndexes = b.dimentions.map((d, i) => i === dimentionsIntersections[m][1] ? k : i > dimentionsIntersections[m][1] ? indexes[i - 1] : indexes[i])
+                            sum += Matrix.getValue(a.data, aIndexes) * Matrix.getValue(b.data, bIndexes);
+                        }
+                    }
+                }
+                else {
+                    const aIndexes = indexes.slice(0, a.dimentions.length)
+                    const bIndexes = indexes.slice(a.dimentions.length)
+                    sum += Matrix.getValue(a.data, aIndexes) * Matrix.getValue(b.data, bIndexes);
                 }
                 return sum;
             });
-    }
-
-    // Transpose matrix
-    static transpose(matrix) {
-        if (matrix.dimentions.length !== 2) {
-            throw 'transposition is not supported for more other 2 dimensions.'
-        }
-        return new Matrix(matrix.dimentions.slice().reverse()).map((_, i, j) => matrix.data[j][i]);
     }
 
     static getValue(data, indexes) {
@@ -130,30 +100,35 @@ export class Matrix {
 
     // Apply a function to every element of the matrix
     map(func) {
-        const indexes = new Array(this.dimentions.length).fill(0)
-        const targetIndexes = JSON.stringify(this.dimentions.map((d, i) => i !== this.dimentions.length - 1 ? d - 1 : d))
-        while (JSON.stringify(indexes) !== targetIndexes) {
-            const target = Matrix.getValue(this.data, indexes.slice(0, indexes.length - 1))
-            target[indexes[indexes.length - 1]] = func(target[indexes[indexes.length - 1]], ...indexes)
+        if (!Array.isArray(this.data)) {
+            this.data = func(this.data)
+        }
+        else {
+            const indexes = new Array(this.dimentions.length).fill(0)
+            while (true) {
+                const target = Matrix.getValue(this.data, indexes.slice(0, indexes.length - 1))
+                target[indexes[indexes.length - 1]] = func(target[indexes[indexes.length - 1]], ...indexes)
 
-            indexes[indexes.length - 1]++
-            if(indexes[indexes.length - 1] >= this.dimentions[indexes.length - 1]) {
-                if(this.dimentions.length === 1) {
-                    break
-                }
                 let i = indexes.length - 1
-                for (i; i >=0; i--) {
-                    if(indexes[i] >= this.dimentions[i]) {
-                        indexes[i] = 0
-                    }
-                    else {
-                        indexes[i]++
-                        break
+                let done = false
+                if(indexes[i] === this.dimentions[i] - 1) {
+                    for (i; i >=0; i--) {
+                        if(indexes[i] === this.dimentions[i] - 1) {
+                            indexes[i] = 0
+                            if (i === 0) {
+                                done = true
+                                break
+                            }
+                        }
+                        else {
+                            break
+                        }
                     }
                 }
-                if (indexes[0] === this.dimentions[0]) {
+                if (done) {
                     break
                 }
+                indexes[i]++
             }
         }
         return this;
@@ -205,5 +180,9 @@ export class Matrix {
         else {
             return this.map(e => e / n);
         }
+    }
+
+    toString() {
+        return `[${this.dimentions.join(', ')}]`
     }
 }
