@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { NeuralNetwork } from './NeuralNetwork2'
+// import { NeuralNetwork } from './NeuralNetwork2'
+import { NeuralNetwork } from './NeuralNetwork3'
 import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
 
 window.NeuralNetwork = NeuralNetwork
@@ -31,7 +32,7 @@ window.NeuralNetwork = NeuralNetwork
 
 const config = {
     inputs: 3,
-    layers: [3,3],
+    layers: [3, 3],
     outputs: 2,
     learningRate: 0.2,
     data: [
@@ -52,24 +53,6 @@ const config = {
             targets: [0, 0],
         }
     ]
-}
-
-const getCanvas = (neuralNetwork, assessment) => {
-    const inputs = assessment.inputs.map(t => ({ bias: 0, output: t }))
-    const layers = [inputs]
-
-    neuralNetwork.layers.forEach((layer, j) => {
-        layers.push([])
-        layer.weights.data.map((weights, i) => {
-            layers.at(-1).push({
-                weights,
-                bias: layer.bias.data[i],
-                output: assessment.outputs[j].data[i],
-            })
-        })
-    })
-
-    return layers;
 }
 
 
@@ -103,7 +86,7 @@ const useML = (MLConfig) => {
         neuralNetwork.train(MLConfig.data)
         const assessments = neuralNetwork.assess(MLConfig.data)
         setOutput(assessments)
-        setCanvas(assessments.map(assessment => getCanvas(neuralNetwork, assessment)))
+        setCanvas(assessments.map(assessment => neuralNetwork.getCanvas(assessment)))
     }, [stepsCount])
 
     return {

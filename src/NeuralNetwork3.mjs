@@ -15,13 +15,8 @@ export class NeuralNetwork {
         const {inputs, layers, outputs} = this.config
         const prevLayers = [inputs, ...layers];
         this.initialLayers = [...layers, outputs].map((layer, index) => {
-            const weights = []
-            for (let j = 0; j <= index; j++) {
-                weights.push(new Matrix([layer, prevLayers[j]]).randomize())
-            }
             return {
-                size: layer,
-                weights,
+                weights: new Matrix([layer, prevLayers[index]]).randomize(),
                 bias: new Matrix([layer]).randomize(),
             }
         })
@@ -31,8 +26,7 @@ export class NeuralNetwork {
     reset = () => {
         this.layers = this.initialLayers.map((layer, index) => {
             return {
-                size: layer.size,
-                weights: layer.weights.map(w => Matrix.copy(w)),
+                weights: Matrix.copy(layer.weights),
                 bias: Matrix.copy(layer.bias),
             }
         })
@@ -41,22 +35,17 @@ export class NeuralNetwork {
     removeNode = (layer, index) => {
         if (layer === this.layers.length - 1) throw `Node at layer ${layer} cannot be removed`
 
-        this.layers[layer].weights.at(-1).remove(0, index)
+        this.layers[layer].weights.remove(0, index)
         this.layers[layer].bias.remove(0, index)
-        for (let j = layer + 1; j < this.layers.length; j++) {
-            this.layers[j].weights[layer].remove(1, index)
-        }
+        this.layers[layer + 1].weights.remove(1, index)
     }
 
     addNode = (layer) => {
         if (layer >= this.layers.length - 1) throw `Node at layer ${layer} cannot be added`
 
-        this.layers[layer].weights.at(-1).insert(0)
+        this.layers[layer].weights.insert(0)
         this.layers[layer].bias.insert(0)
         this.layers[layer + 1].weights.insert(1)
-        for (let j = layer + 1; j < this.layers.length; j++) {
-            this.layers[j].weights[layer].insert(1)
-        }
     }
 
     // Define the activation function and its derivative
@@ -81,16 +70,9 @@ export class NeuralNetwork {
         const input = new Matrix([inputArray.length], inputArray)
 
         const outputs = [input]
-        const weightsOutputs = []
 
-        this.layers.forEach(({ size, weights, bias }, index) => {
-            const output = new Matrix([size])
-            weightsOutputs.push([])
-            for (let j = 0; j <= index; j++) {
-                const weightsOutput = Matrix.crossMultiply(weights[j], outputs[j])
-                weightsOutputs.at(-1).push(weightsOutput)
-                output.add(weightsOutput)
-            }
+        this.layers.forEach(({ weights, bias }) => {
+            const output = Matrix.crossMultiply(weights, outputs.at(-1));
             output.add(bias);
             output.map(this.sigmoid);
             outputs.push(output)
@@ -100,20 +82,18 @@ export class NeuralNetwork {
             input,
             outputs: outputs.slice(1),
             output: outputs.at(-1),
-            weightsOutputs,
         }
     }
 
     assess = (data) => {
         return data.map(({inputs, targets}) => {
-            const { outputs, input, output, weightsOutputs } = this.predict(inputs)
+            const { outputs, input, output } = this.predict(inputs)
             return {
                 input,
                 output,
                 inputs,
                 targets,
                 outputs,
-                weightsOutputs,
                 accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - output.data[index]), 0) / targets.length
             }
         })
@@ -123,75 +103,29 @@ export class NeuralNetwork {
         const outputErrors = []
         data.forEach(({inputs, targets}) => {
             // Feed forward
-            const [{ outputs, input, accuracy, weightsOutputs }] = this.assess([{inputs, targets}])
+            const [{ outputs, input, accuracy }] = this.assess([{inputs, targets}])
     
             const prevOutputs = [input, ...outputs.slice(0, -1)]
     
-            this.outputErrors = [[new Matrix([targets.length], targets).subtract(outputs.at(-1))]]
+            this.outputErrors = [new Matrix([targets.length], targets).subtract(outputs.at(-1))]
     
-            for (let i = this.layers.length - 1; i >= 0; i--) {
-                this.outputErrors.unshift([])
+            for (let i = outputs.length - 1; i >= 0; i--) {
+    
                 // Calculate gradient
                 const output_sensitivity = Matrix.copy(outputs[i]).map(this.dsigmoid)
-
-                const output_deltas = Matrix.copy(this.outputErrors[1][0]).multiply(output_sensitivity).multiply(this.learningRate / accuracy);
+                const output_deltas = Matrix.copy(this.outputErrors[0]).multiply(output_sensitivity).multiply(this.learningRate / accuracy);
                 
-                for (let k = this.layers[i].weights.length - 1; k >= 0; k--) {
-                // for (let j = i; j >= 0; j--) {
-    
-                    this.outputErrors[0].unshift(Matrix.crossMultiply(this.layers[i].weights[k], Matrix.copy(this.outputErrors[1][0]).subtract(output_deltas), [[0, 0]]))
-                    
-                    // Calculate deltas
-                    const weights_deltas = Matrix.crossMultiply(output_deltas, prevOutputs[k], []);
-                    
-                    // Adjust the weights by deltas
-                    this.layers[i].weights[k].add(weights_deltas)
-                    // Adjust the bias by its deltas
-                }
+                // Prepare next outputErrors
+                this.outputErrors.unshift(Matrix.crossMultiply(this.layers[i].weights, Matrix.copy(this.outputErrors[0]).subtract(output_deltas), [[0, 0]]))
+
+                // Calculate deltas
+                const weights_deltas = Matrix.crossMultiply(output_deltas, prevOutputs[i], []);
+                
+                // Adjust the weights by deltas
+                this.layers[i].weights.add(weights_deltas)
+                // Adjust the bias by its deltas
                 this.layers[i].bias.add(output_deltas)
-                
-                // Calculate gradient
-                // const output_sensitivity = Matrix.copy(outputs[i]).map(this.dsigmoid)
-
-                // const output_deltas = Matrix.copy(this.outputErrors[0]).multiply(output_sensitivity).multiply(this.learningRate / accuracy);
-                
-                // for (let k = 0; k < this.layers[i].weights.length; k++) {
-                    
-                //     // Prepare next outputErrors
-                //     this.outputErrors[0].unshift(Matrix.crossMultiply(this.layers[i].weights[k], Matrix.copy(this.outputErrors[0]).subtract(output_deltas), [[0, 0]]))
-    
-                //     // Calculate deltas
-                //     const weights_deltas = Matrix.crossMultiply(output_deltas, prevOutputs[i], []);
-                    
-                //     // Adjust the weights by deltas
-                //     this.layers[i].weights.add(weights_deltas)
-                //     // Adjust the bias by its deltas
-                //     this.layers[i].bias.add(output_deltas)
-                // }
             }
-    
-            // for (let i = outputs.length - 1; i >= 0; i--) {
-    
-            //     // Calculate gradient
-            //     const output_sensitivity = Matrix.copy(outputs[i]).map(this.dsigmoid)
-
-            //     // for (let j = 0; j < this.outputErrors[0].length; j++) {
-            //         for (let k = i; k < this.layers.length; k++) {
-            //             const output_deltas = Matrix.copy(this.outputErrors[0][j]).multiply(output_sensitivity).multiply(this.learningRate / accuracy);
-                        
-            //             // Prepare next outputErrors
-            //             this.outputErrors.unshift(Matrix.crossMultiply(this.layers[i].weights, Matrix.copy(this.outputErrors[0]).subtract(output_deltas), [[0, 0]]))
-        
-            //             // Calculate deltas
-            //             const weights_deltas = Matrix.crossMultiply(output_deltas, prevOutputs[i], []);
-                        
-            //             // Adjust the weights by deltas
-            //             this.layers[i].weights.add(weights_deltas)
-            //             // Adjust the bias by its deltas
-            //             this.layers[i].bias.add(output_deltas)
-            //         }
-            //     // }
-            // }
 
             outputErrors.push(this.outputErrors)
         })
@@ -257,7 +191,7 @@ export class NeuralNetwork {
     
         this.layers.forEach((layer, j) => {
             layers.push([])
-            layer.weights[0].data.map((weights, i) => {
+            layer.weights.data.map((weights, i) => {
                 layers.at(-1).push({
                     weights,
                     bias: layer.bias.data[i],
