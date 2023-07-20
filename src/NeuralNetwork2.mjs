@@ -34,7 +34,6 @@ export class NeuralNetwork {
 
     removeNode = (layer, index) => {
         if (layer === this.layers.length - 1) throw `Node at layer ${layer} cannot be removed`
-        if (index > this.layers[layer].weights.data.length - 1) throw `Node at layer ${layer} index ${index} cannot be removed`
 
         this.layers[layer].weights.remove(0, index)
         this.layers[layer].bias.remove(0, index)
@@ -82,18 +81,20 @@ export class NeuralNetwork {
         return {
             input,
             outputs: outputs.slice(1),
+            output: outputs.at(-1),
         }
     }
 
     assess = (data) => {
         return data.map(({inputs, targets}) => {
-            const { outputs, input } = this.predict(inputs)
+            const { outputs, input, output } = this.predict(inputs)
             return {
                 input,
+                output,
                 inputs,
                 targets,
                 outputs,
-                accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - outputs.at(-1).data[index]), 0) / targets.length
+                accuracy: 1 - targets.reduce((total, target, index) => total + Math.abs(target - output.data[index]), 0) / targets.length
             }
         })
     }
@@ -118,9 +119,7 @@ export class NeuralNetwork {
                 this.outputErrors.unshift(Matrix.crossMultiply(this.layers[i].weights, Matrix.copy(this.outputErrors[0]).subtract(output_deltas), [[0, 0]]))
 
                 // Calculate deltas
-                // const prevOutputsSensitivity = Vector.map(prevOutputs[i], this.dsigmoid);
                 const weights_deltas = Matrix.crossMultiply(output_deltas, prevOutputs[i], []);
-                // const weights_deltas = output_deltas.multiply(prevOutputs[i]);
                 
                 // Adjust the weights by deltas
                 this.layers[i].weights.add(weights_deltas)

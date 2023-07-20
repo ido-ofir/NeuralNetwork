@@ -32,7 +32,6 @@ export class NeuralNetwork {
 
     removeNode = (layer, index) => {
         if (layer === this.layers.length - 1) throw `Node at layer ${layer} cannot be removed`
-        if (index > this.layers[layer].weights.data.length - 1) throw `Node at layer ${layer} index ${index} cannot be removed`
 
         this.layers[layer].weights.removeRow(index)
         this.layers[layer].bias.removeRow(index)
@@ -40,7 +39,7 @@ export class NeuralNetwork {
     }
 
     addNode = (layer) => {
-        if (layer >= this.layers.length - 1) throw `Node at layer ${layer} cannot be added`
+        if (layer === this.layers.length - 1) throw `Node at layer ${layer} cannot be added`
 
         this.layers[layer].weights.addRow()
         this.layers[layer].bias.addRow()
