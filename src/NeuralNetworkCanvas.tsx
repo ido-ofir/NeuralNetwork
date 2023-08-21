@@ -1,28 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 
-function sigmoid(x) {
+function sigmoid(x: number) {
     return 1 / (1 + Math.exp(-x));
 }
 
-const getColor = (value) => {
-    // Ensure the value is within the expected range
-    value = Math.max(-1, Math.min(1, value));
+const getOutputColor = (value: number) => `rgba(100, 100, 255, ${value})`
 
-    // Map the value from [-1, 1] to [0, 120]
-    const hue = ((value + 1) / 2) * 120;
-
-    // Return an HSL color string
-    return `hsl(${hue}, 100%, 50%)`;
-}
-
-const getOutputColor = (value) => `rgba(100, 100, 255, ${value})`
-
-export const NeuralNetworkCanvas = ({ network, structureColor = "#aaa", backgroundColor = "#444", getValueColor = getOutputColor }) => {
-    const canvasRef = useRef(null);
+export const NeuralNetworkCanvas: React.FC<{network: {output: number, weights: number[], bias: number}[][], structureColor?: string, backgroundColor?: string, getValueColor?: (a: number) => string}> = ({ network, structureColor = "#aaa", backgroundColor = "#444", getValueColor = getOutputColor }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
+
+        if (!canvas) return
+
         const context = canvas.getContext('2d');
+        
+        if (!context) return
 
         // Determine size of canvas based on network size
         const layerCount = network.length;

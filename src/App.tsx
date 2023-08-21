@@ -1,15 +1,14 @@
-import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
-// import { NeuralNetwork } from './NeuralNetwork2'
-import { NeuralNetwork } from './NeuralNetwork3'
+import React from 'react'
 import { NeuralNetworkCanvas } from './NeuralNetworkCanvas'
-
-window.NeuralNetwork = NeuralNetwork
+import { useML } from './useML'
 
 // const config = {
-//     inputs: 2,
-//     layers: [2],
-//     outputs: 2,
-//     learningRate: 0.2,
+//     NNConfig: {
+//         inputs: 2,
+//         layers: [2],
+//         outputs: 2,
+//         learningRate: 0.2,
+//     },
 //     data: [
 //         {
 //             inputs: [0, 1],
@@ -31,10 +30,12 @@ window.NeuralNetwork = NeuralNetwork
 // }
 
 const config = {
-    inputs: 3,
-    layers: [3, 3],
-    outputs: 2,
-    learningRate: 0.2,
+    NNConfig: {
+        inputs: 3,
+        layers: [3, 3],
+        outputs: 2,
+        learningRate: 0.2,
+    },
     data: [
         {
             inputs: [0, 1, 0],
@@ -55,78 +56,38 @@ const config = {
     ]
 }
 
-
-const useML = (MLConfig) => {
-    const intervalRef = useRef(null)
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [stepsCount, step] = useReducer((stepsCount, newStepsCount) => newStepsCount ?? (stepsCount + 1), 0)
-    const [output, setOutput] = useState([])
-    const [neuralNetwork] = useState(() => new NeuralNetwork(MLConfig))
-    const [canvas, setCanvas] = useState([])
-    window.neuralNetwork = neuralNetwork
-    useEffect(() => {
-        if (isPlaying) {
-            intervalRef.current = setInterval(() => step(), 100)
-        }
-        else {
-            clearInterval(intervalRef.current)
-        }
-
-        return () => clearInterval(intervalRef.current)
-    }, [isPlaying])
-
-    const train = (epochs) => {
-        for (let i = 0; i < epochs; i++) {
-            neuralNetwork.train(MLConfig.data)
-        }
-        step(stepsCount + epochs)
-    }
-
-    useMemo(() => {
-        neuralNetwork.train(MLConfig.data)
-        const assessments = neuralNetwork.assess(MLConfig.data)
-        setOutput(assessments)
-        setCanvas(assessments.map(assessment => neuralNetwork.getCanvas(assessment)))
-    }, [stepsCount])
-
-    return {
-        play: () => setIsPlaying(true),
-        stop: () => setIsPlaying(false),
-        step: () => step(),
-        reset: () => {neuralNetwork.reset(); step(0)},
-        initialize: () => {neuralNetwork.initialize(); step(0)},
-        isPlaying,
-        stepsCount,
-        output,
-        canvas,
-        train,
-    }
-}
-
-const App = () => {
+const App: React.FC = () => {
     const {
         play,
         stop,
-        step,
+        incrementStep,
         reset,
         initialize,
         isPlaying,
-        stepsCount,
+        step,
         output,
         train,
         canvas,
-    } = useML(config)
+        setNeuralNetworkKey,
+    } = useML(config.NNConfig, config.data);
 
     return (
         <div style={{ height: '100%', position: 'relative', fontSize: '20px', color: '#fff' }}>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20, flex: 1, position: 'relative' }}>
-                <div style={{ display: 'flex', flex: 1 }}>
+                <div style={{ display: 'flex', flex: 1, zoom: '50%' }}>
                     <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
-                        <NeuralNetworkCanvas network={canvas[0]} />
-                        <NeuralNetworkCanvas network={canvas[1]} />
-                        <NeuralNetworkCanvas network={canvas[2]} />
-                        <NeuralNetworkCanvas network={canvas[3]} />
+                        {
+                            canvas.map((c, i) => (
+                                <div key={i} style={{ display: 'flex', flex: 1, position: 'relative', flexDirection: 'column' }}>
+                                    {
+                                        c.map((d, j) => (
+                                            <NeuralNetworkCanvas key={i * c.length + j} network={d} />
+                                        ))
+                                    }
+                                </div>
+                            ))
+                        }
                     </div>
                 </div>
                 <div>
@@ -153,7 +114,7 @@ const App = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
                                     <div>Output = </div>
                                     {
-                                        JSON.stringify(t.outputs.at(-1).data.map(t => t.toFixed(2)))
+                                        JSON.stringify(t.outputs[t.outputs.length - 1].toArray().map(t => t.toFixed(2)))
                                     }
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
@@ -166,13 +127,17 @@ const App = () => {
                 </div>
             </div>
             <div style={{ border: '1px solid #fff', position: 'absolute', bottom: 20, left: 20, right: 20, padding: 6, display: 'flex', justifyContent: 'center' }}>
+                <select onChange={e => setNeuralNetworkKey(e.target.value as 'NN' | 'NN_ExponentialWeights')}>
+                    <option value="NN">NN</option>
+                    <option value="NN_ExponentialWeights">NN_ExponentialWeights</option>
+                </select>
                 <button onClick={initialize}>
                     Re-Initialize
                 </button>
                 <button onClick={reset}>
                     Reset
                 </button>
-                <button onClick={step}>
+                <button onClick={incrementStep}>
                     Step
                 </button>
                 <button onClick={isPlaying ? stop : play}>
@@ -190,7 +155,7 @@ const App = () => {
                 <button onClick={() => train(100000)}>
                     100,000 epochs
                 </button>
-                Steps: {stepsCount}
+                Steps: {step}
                 Accuracy: {(output.reduce((a, b) => a + b.accuracy, 0) / output.length).toFixed(2)}
             </div>
         </div>
